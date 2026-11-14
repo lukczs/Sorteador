@@ -100,7 +100,10 @@ document.getElementById('titulo').addEventListener('click', () => {
   if (tapCount >= 5) { tapCount = 0; toggleLucasRule(); }
 });
 
-function toggleLucasRule() { lucasRuleActive = !lucasRuleActive; }
+function toggleLucasRule() {
+  lucasRuleActive = !lucasRuleActive;
+  document.getElementById('titulo').style.color = lucasRuleActive ? '#6b7280' : '#a78bfa';
+}
 
 document.getElementById('nomeInput').addEventListener('keydown', e => { if (e.key === 'Enter') adicionarParticipante(); });
 
