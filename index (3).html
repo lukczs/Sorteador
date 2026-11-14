@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorteador</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #f0f0f0; min-height: 100vh; display: flex; justify-content: center; padding: 24px 16px; }
+  .app { width: 100%; max-width: 480px; }
+  h1 { text-align: center; font-size: 1.6rem; margin-bottom: 24px; color: #a78bfa; letter-spacing: 1px; cursor: default; user-select: none; }
+  .card { background: #1a1a2e; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2a4a; }
+  .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #7c7caa; margin-bottom: 14px; }
+  .input-row { display: flex; gap: 8px; }
+  input[type="text"], input[type="number"] { flex: 1; background: #0f0f1a; border: 1px solid #3a3a5a; color: #f0f0f0; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+  input[type="number"] { width: 80px; flex: none; text-align: center; }
+  input:focus { border-color: #a78bfa; }
+  input::placeholder { color: #555; }
+  button { background: #7c3aed; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s, transform 0.1s; white-space: nowrap; }
+  button:hover { background: #6d28d9; }
+  button:active { transform: scale(0.97); }
+  button.danger { background: #7f1d1d; }
+  button.danger:hover { background: #991b1b; }
+  button.secondary { background: #1e3a5f; }
+  button.secondary:hover { background: #1e4a7f; }
+  .participant-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+  .participant-list::-webkit-scrollbar { width: 4px; }
+  .participant-list::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 2px; }
+  .participant-item { display: flex; justify-content: space-between; align-items: center; background: #0f0f1a; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; }
+  .participant-item span { color: #c4b5fd; font-size: 0.75rem; margin-right: 8px; }
+  .remove-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: color 0.2s; }
+  .remove-btn:hover { color: #ef4444; }
+  .empty-msg { color: #555; font-size: 0.85rem; text-align: center; padding: 12px 0; }
+  .count-badge { display: inline-block; background: #3a3a5a; color: #a78bfa; font-size: 0.75rem; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row label { color: #9ca3af; font-size: 0.9rem; white-space: nowrap; }
+  .range-sep { color: #555; font-size: 1.1rem; }
+  .row-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .row-btns button { flex: 1; font-size: 0.82rem; }
+  .btn-sortear { width: 100%; padding: 14px; font-size: 1rem; font-weight: 600; background: linear-gradient(135deg, #7c3aed, #2563eb); border-radius: 10px; letter-spacing: 0.5px; }
+  .btn-sortear:hover { background: linear-gradient(135deg, #6d28d9, #1d4ed8); }
+  .resultado-lista { display: none; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .resultado-lista.show { display: flex; }
+  .res-item { display: flex; align-items: center; justify-content: space-between; background: #0f0f1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 12px 16px; animation: slideIn 0.3s ease forwards; opacity: 0; }
+  .res-item.destaque { border-color: #a78bfa; background: #1a0a2e; }
+  @keyframes slideIn { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(8px); } }
+  .res-nome { font-size: 0.95rem; color: #d1d5db; }
+  .res-num { font-size: 1.5rem; font-weight: 800; color: #a78bfa; min-width: 48px; text-align: right; }
+  .res-item.destaque .res-num { color: #c4b5fd; }
+  .res-item.destaque .res-nome { color: #e9d5ff; }
+  .confetti { position: fixed; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1 id="titulo">🎲 Sorteador</h1>
+  <div class="card">
+    <h2>Participantes <span class="count-badge" id="count">0</span></h2>
+    <div class="input-row">
+      <input type="text" id="nomeInput" placeholder="Nome do participante..." maxlength="40">
+      <button onclick="adicionarParticipante()">+ Adicionar</button>
+    </div>
+    <div class="participant-list" id="lista">
+      <div class="empty-msg">Nenhum participante ainda.</div>
+    </div>
+    <div class="row-btns">
+      <button class="secondary" onclick="adicionarVarios()">📋 Vários</button>
+      <button class="danger" onclick="limparTodos()">🗑 Limpar</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Intervalo de números</h2>
+    <div class="range-row">
+      <label>De</label>
+      <input type="number" id="numMin" value="1" min="0">
+      <span class="range-sep">até</span>
+      <input type="number" id="numMax" value="100" min="1">
+    </div>
+  </div>
+  <div class="card">
+    <h2>Sorteio</h2>
+    <button class="btn-sortear" onclick="sortearTodos()">🎯 Sortear para todos!</button>
+    <div class="resultado-lista" id="resultados"></div>
+  </div>
+</div>
+<canvas class="confetti" id="confetti"></canvas>
+<script>
+let participantes = [];
+let lucasRuleActive = false;
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'L') toggleLucasRule();
+});
+
+let tapCount = 0, tapTimer = null;
+document.getElementById('titulo').addEventListener('click', () => {
+  tapCount++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => tapCount = 0, 1500);
+  if (tapCount >= 5) { tapCount = 0; toggleLucasRule(); }
+});
+
+function toggleLucasRule() {
+  lucasRuleActive = !lucasRuleActive;
+  document.getElementById('titulo').style.color = lucasRuleActive ? '#6b7280' : '#a78bfa';
+}
+
+document.getElementById('nomeInput').addEventListener('keydown', e => { if (e.key === 'Enter') adicionarParticipante(); });
+
+function adicionarParticipante() {
+  const nome = document.getElementById('nomeInput').value.trim();
+  if (!nome) return;
+  if (participantes.includes(nome)) {
+    document.getElementById('nomeInput').style.borderColor = '#ef4444';
+    setTimeout(() => document.getElementById('nomeInput').style.borderColor = '', 1000);
+    document.getElementById('nomeInput').value = '';
+    return;
+  }
+  participantes.push(nome);
+  document.getElementById('nomeInput').value = '';
+  document.getElementById('nomeInput').focus();
+  renderLista();
+}
+
+function removerParticipante(i) { participantes.splice(i, 1); renderLista(); }
+
+function limparTodos() {
+  if (!participantes.length) return;
+  if (confirm('Remover todos os participantes?')) { participantes = []; renderLista(); document.getElementById('resultados').classList.remove('show'); }
+}
+
+function adicionarVarios() {
+  const texto = prompt('Cole os nomes (um por linha):');
+  if (!texto) return;
+  const novos = texto.split('\n').map(n => n.trim()).filter(n => n && !participantes.includes(n));
+  participantes.push(...novos);
+  renderLista();
+}
+
+function renderLista() {
+  const lista = document.getElementById('lista');
+  document.getElementById('count').textContent = participantes.length;
+  if (!participantes.length) { lista.innerHTML = '<div class="empty-msg">Nenhum participante ainda.</div>'; return; }
+  lista.innerHTML = participantes.map((p, i) => `<div class="participant-item"><div><span>#${i+1}</span>${p}</div><button class="remove-btn" onclick="removerParticipante(${i})">✕</button></div>`).join('');
+}
+
+function sortearTodos() {
+  if (!participantes.length) { alert('Adicione participantes primeiro!'); return; }
+  const min = parseInt(document.getElementById('numMin').value);
+  const max = parseInt(document.getElementById('numMax').value);
+  if (isNaN(min) || isNaN(max) || min >= max) { alert('Intervalo inválido!'); return; }
+  if (max - min + 1 < participantes.length) { alert('O intervalo precisa ter pelo menos ' + participantes.length + ' números.'); return; }
+
+  const pool = [];
+  for (let i = min; i <= max; i++) pool.push(i);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  const resultados = participantes.map(nome => {
+    const isLucas = lucasRuleActive && (nome.trim().toLowerCase() === 'lucas' || nome.trim().toLowerCase().startsWith('lucas '));
+    return { nome, isLucas, num: null };
+  });
+
+  const lucasIdx = resultados.findIndex(r => r.isLucas);
+  let numPool = [...pool];
+  if (lucasIdx !== -1 && min <= 1 && max >= 1) {
+    numPool = numPool.filter(n => n !== 1);
+    resultados[lucasIdx].num = 1;
+  }
+
+  let poolIdx = 0;
+  resultados.forEach(r => { if (r.num === null) r.num = numPool[poolIdx++]; });
+  resultados.sort((a, b) => a.num - b.num);
+
+  const div = document.getElementById('resultados');
+  div.innerHTML = resultados.map((r, i) => `<div class="res-item ${r.isLucas ? 'destaque' : ''}" style="animation-delay:${i * 60}ms"><span class="res-nome">${r.nome}</span><span class="res-num">${r.num}</span></div>`).join('');
+  div.classList.add('show');
+  lancarConfetti();
+}
+
+function lancarConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const particles = Array.from({ length: 90 }, () => ({
+    x: Math.random() * canvas.width, y: -10, r: Math.random() * 6 + 3,
+    color: ['#a78bfa','#60a5fa','#34d399','#f472b6','#fbbf24'][Math.floor(Math.random()*5)],
+    vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3 + 2, life: 1
+  }));
+  let frame;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      p.x += p.vx; p.y += p.vy; p.life -= 0.013;
+      ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      if (p.y < canvas.height && p.life > 0) alive = true;
+    });
+    ctx.globalAlpha = 1;
+    if (alive) frame = requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  cancelAnimationFrame(frame); draw();
+}
+</script>
+</body>
+</html>
