@@ -79,7 +79,7 @@
   </div>
   <div class="card">
     <h2>Sorteio</h2>
-    <button class="btn-sortear" onclick="sortearTodos()">🎯 Sortear para todos!</button>
+    <button class="btn-sortear" id="btnSortear" onclick="sortearTodos()">🎯 Sortear para todos!</button>
     <div class="resultado-lista" id="resultados"></div>
   </div>
 </div>
@@ -88,10 +88,12 @@
 let participantes = [];
 let lucasRuleActive = false;
 
+// Desktop: Ctrl+Shift+L
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.shiftKey && e.key === 'L') toggleLucasRule();
 });
 
+// Celular: 5 toques no título
 let tapCount = 0, tapTimer = null;
 document.getElementById('titulo').addEventListener('click', () => {
   tapCount++;
@@ -100,9 +102,19 @@ document.getElementById('titulo').addEventListener('click', () => {
   if (tapCount >= 5) { tapCount = 0; toggleLucasRule(); }
 });
 
+// Celular: segurar botão sortear por 3s
+let holdTimer = null;
+const btnSortear = document.getElementById('btnSortear');
+btnSortear.addEventListener('mousedown', () => { holdTimer = setTimeout(toggleLucasRule, 3000); });
+btnSortear.addEventListener('touchstart', () => { holdTimer = setTimeout(toggleLucasRule, 3000); });
+btnSortear.addEventListener('mouseup', () => clearTimeout(holdTimer));
+btnSortear.addEventListener('mouseleave', () => clearTimeout(holdTimer));
+btnSortear.addEventListener('touchend', () => clearTimeout(holdTimer));
+
 function toggleLucasRule() {
   lucasRuleActive = !lucasRuleActive;
-  document.getElementById('titulo').style.color = lucasRuleActive ? '#6b7280' : '#a78bfa';
+  document.getElementById('count').style.background = lucasRuleActive ? '#374151' : '#3a3a5a';
+  document.getElementById('count').style.color = lucasRuleActive ? '#9ca3af' : '#a78bfa';
 }
 
 document.getElementById('nomeInput').addEventListener('keydown', e => { if (e.key === 'Enter') adicionarParticipante(); });
